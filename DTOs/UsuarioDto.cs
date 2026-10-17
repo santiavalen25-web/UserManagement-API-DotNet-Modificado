@@ -10,7 +10,13 @@ public class UsuarioDto
 
     public string Correo { get; set; } = string.Empty;
 
+    public DateTime FechaNacimiento { get; set; }
+
     public int Edad { get; set; }
+
+    public string Universidad { get; set; } = string.Empty;
+
+    public int Semestre { get; set; }
 
     public bool Activo { get; set; }
 

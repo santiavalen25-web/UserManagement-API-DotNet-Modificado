@@ -54,6 +54,29 @@ public class UsuarioService : IUsuarioService
             );
         }
 
+        if (string.IsNullOrWhiteSpace(d.Universidad))
+        {
+            throw new InvalidOperationException(
+                "La universidad es obligatoria."
+            );
+        }
+
+        if (d.Semestre < 1 || d.Semestre > 10)
+        {
+            throw new InvalidOperationException(
+                "El semestre debe estar entre 1 y 10."
+            );
+        }
+
+        // Calcular edad exacta considerando día, mes y año
+        int edadCalculada = CalcularEdad(d.FechaNacimiento);
+        if (edadCalculada < 0 || edadCalculada > 120)
+        {
+            throw new InvalidOperationException(
+                "La fecha de nacimiento no es válida."
+            );
+        }
+
         // Convertir contraseña en HASH
         var passwordHash =
             BCrypt.Net.BCrypt.HashPassword(d.Password);
@@ -64,8 +87,10 @@ public class UsuarioService : IUsuarioService
             Apellido = d.Apellido.Trim(),
             Correo = correo,
             PasswordHash = passwordHash,
-            Edad = d.Edad,
-            RolId = d.RolId
+            FechaNacimiento = d.FechaNacimiento.Date,
+            Edad = edadCalculada,
+            Universidad = d.Universidad.Trim(),
+            Semestre = d.Semestre
         };
 
         await _repo.CrearAsync(usuario);
@@ -155,7 +180,10 @@ public class UsuarioService : IUsuarioService
         usuario.Nombre = d.Nombre.Trim();
         usuario.Apellido = d.Apellido.Trim();
         usuario.Correo = correo;
-        usuario.Edad = d.Edad;
+        usuario.FechaNacimiento = d.FechaNacimiento.Date;
+        usuario.Edad = CalcularEdad(d.FechaNacimiento);
+        usuario.Universidad = d.Universidad.Trim();
+        usuario.Semestre = d.Semestre;
         usuario.Activo = d.Activo;
 
         await _repo.ActualizarAsync(usuario);
@@ -182,6 +210,23 @@ public class UsuarioService : IUsuarioService
     }
 
     // ==========================================
+    // CÁLCULO EXACTO DE EDAD (DÍA, MES Y AÑO)
+    // ==========================================
+    private static int CalcularEdad(DateTime fechaNacimiento)
+    {
+        var hoy = DateTime.Today;
+        int edad = hoy.Year - fechaNacimiento.Year;
+
+        // Si aún no ha cumplido años en el año actual, restar 1
+        if (fechaNacimiento.Date > hoy.AddYears(-edad))
+        {
+            edad--;
+        }
+
+        return edad;
+    }
+
+    // ==========================================
     // MAPEO ENTITY -> DTO
     // ==========================================
     private static UsuarioDto Map(Usuario u)
@@ -192,7 +237,10 @@ public class UsuarioService : IUsuarioService
             Nombre = u.Nombre,
             Apellido = u.Apellido,
             Correo = u.Correo,
+            FechaNacimiento = u.FechaNacimiento,
             Edad = u.Edad,
+            Universidad = u.Universidad,
+            Semestre = u.Semestre,
             Activo = u.Activo,
             FechaCreacion = u.FechaCreacion
         };
